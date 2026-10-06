@@ -12,6 +12,7 @@ import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.setupViewBackground
+import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.interfaces.ItemMoveCallback
 import org.fossify.commons.interfaces.ItemTouchHelperContract
@@ -125,23 +126,35 @@ class ClipsActivityAdapter(
     }
 
     private fun deleteSelection() {
-        val deleteClips = ArrayList<Clip>(selectedKeys.size)
-        val positions = getSelectedItemPositions()
+        val selectedClips = getSelectedItems()
+        val pinnedClips = selectedClips.filter { it.isPinned }
+        val unpinnedToDelete = selectedClips.filter { !it.isPinned }
 
-        getSelectedItems().forEach {
-            deleteClips.add(it)
+        if (pinnedClips.isNotEmpty()) {
+            activity.toast(R.string.cannot_delete_pinned)
         }
 
-        items.removeAll(deleteClips)
-        removeSelectedItems(positions)
+        if (unpinnedToDelete.isEmpty()) {
+            finishActMode()
+            return
+        }
+
+        val deletePositions = unpinnedToDelete.mapNotNull { clip ->
+            val index = items.indexOf(clip)
+            if (index != -1) index else null
+        }
+
+        items.removeAll(unpinnedToDelete)
+        removeSelectedItems(ArrayList(deletePositions))
 
         ensureBackgroundThread {
-            deleteClips.forEach { clip ->
+            unpinnedToDelete.forEach { clip ->
                 activity.clipsDB.delete(clip.id!!.toLong())
             }
 
-            if (items.isEmpty()) {
+            activity.runOnUiThread {
                 listener.refreshItems()
+                finishActMode()
             }
         }
     }

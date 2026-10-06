@@ -211,6 +211,8 @@ class MyKeyboardView @JvmOverloads constructor(
     private var mToolbarHolder: View? = null
     private var mClipboardManagerHolder: View? = null
     private var mEmojiPaletteHolder: View? = null
+    private var mToolsMenuHolder: View? = null
+    private var mTextEditorHolder: View? = null
     private var emojiCompatMetadataVersion = 0
 
     // For multi-tap
@@ -368,13 +370,12 @@ class MyKeyboardView @JvmOverloads constructor(
             mToolbarHolder = toolbarHolder
             mClipboardManagerHolder = clipboardManagerHolder
             mEmojiPaletteHolder = emojiPaletteHolder
+            mToolsMenuHolder = toolsMenuHolder
+            mTextEditorHolder = textEditorHolder
 
             toolbarSticker.setOnClickListener {
                 vibrateIfNeeded()
-                Intent(context, SettingsActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(this)
-                }
+                openToolsMenu()
             }
 
             toolbarEmoji.setOnClickListener {
@@ -396,12 +397,7 @@ class MyKeyboardView @JvmOverloads constructor(
 
             toolbarCursor.setOnClickListener {
                 vibrateIfNeeded()
-                mOnKeyboardActionListener?.moveCursorRight()
-            }
-            toolbarCursor.setOnLongClickListener {
-                vibrateIfNeeded()
-                mOnKeyboardActionListener?.moveCursorLeft()
-                true
+                openTextEditor()
             }
 
             pinnedClipboardItems.setOnLongClickListener { context.toast(R.string.clipboard); true; }
@@ -413,6 +409,163 @@ class MyKeyboardView @JvmOverloads constructor(
             toolbarCollapse.setOnClickListener {
                 vibrateIfNeeded()
                 (context as? android.inputmethodservice.InputMethodService)?.requestHideSelf(0)
+            }
+
+            // Clipboard Panel actions
+            clipboardManagerClose.setOnClickListener {
+                vibrateIfNeeded()
+                closeAllPanels()
+            }
+
+            clipboardManagerManage.setOnClickListener {
+                vibrateIfNeeded()
+                Intent(context, ManageClipboardItemsActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(this)
+                }
+            }
+
+            clipboardManagerClearAll.setOnClickListener {
+                vibrateIfNeeded()
+                ensureBackgroundThread {
+                    // CRITICAL: Pinned texts MUST NOT be deleted unless unpinned!
+                    context.clipsDB.deleteAll()
+                    Handler(Looper.getMainLooper()).post {
+                        context.toast(R.string.clear_clipboard_data)
+                        setupStoredClips()
+                    }
+                }
+            }
+
+            // Tools Menu actions (Image 90)
+            toolsMenuClose.setOnClickListener {
+                vibrateIfNeeded()
+                closeAllPanels()
+            }
+
+            toolsMenuSettings.setOnClickListener {
+                vibrateIfNeeded()
+                Intent(context, SettingsActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(this)
+                }
+            }
+
+            toolItemResize.setOnClickListener {
+                vibrateIfNeeded()
+                context.toast(R.string.keyboard_height)
+            }
+
+            toolItemTheme.setOnClickListener {
+                vibrateIfNeeded()
+                Intent(context, SettingsActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(this)
+                }
+            }
+
+            toolItemTranslate.setOnClickListener {
+                vibrateIfNeeded()
+                context.toast(R.string.tool_translate)
+            }
+
+            toolItemFloating.setOnClickListener {
+                vibrateIfNeeded()
+                context.toast(R.string.tool_floating)
+            }
+
+            toolItemEditor.setOnClickListener {
+                vibrateIfNeeded()
+                openTextEditor()
+            }
+
+            toolItemStickers.setOnClickListener {
+                vibrateIfNeeded()
+                context.toast(R.string.tool_stickers)
+            }
+
+            toolItemGifs.setOnClickListener {
+                vibrateIfNeeded()
+                context.toast(R.string.tool_gifs)
+            }
+
+            toolItemLanguages.setOnClickListener {
+                vibrateIfNeeded()
+                SwitchLanguageDialog(this@MyKeyboardView) {
+                    mOnKeyboardActionListener?.reloadKeyboard()
+                }
+            }
+
+            // Text Editor actions (Image 91)
+            textEditorClose.setOnClickListener {
+                vibrateIfNeeded()
+                closeAllPanels()
+            }
+
+            editorBtnUp.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.moveCursorUp()
+            }
+
+            editorBtnDown.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.moveCursorDown()
+            }
+
+            editorBtnLeft.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.moveCursorLeft()
+            }
+
+            editorBtnRight.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.moveCursorRight()
+            }
+
+            editorBtnSelect.setOnClickListener {
+                vibrateIfNeeded()
+                val active = mOnKeyboardActionListener?.toggleSelectMode() ?: false
+                editorBtnSelect.setTextColor(if (active) Color.parseColor("#00E676") else Color.parseColor("#00BCD4"))
+            }
+
+            editorBtnSelectAll.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.selectAll()
+            }
+
+            editorBtnCopy.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.copyText()
+            }
+
+            editorBtnCut.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.cutText()
+            }
+
+            editorBtnPaste.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.pasteText()
+            }
+
+            editorBtnStart.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.moveToStart()
+            }
+
+            editorBtnEnd.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.moveToEnd()
+            }
+
+            editorBtnBackspace.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.deleteChar()
+            }
+
+            editorBtnSpace.setOnClickListener {
+                vibrateIfNeeded()
+                mOnKeyboardActionListener?.insertSpace()
             }
 
             settingsCog.setOnLongClickListener { context.toast(R.string.settings); true; }
@@ -535,10 +688,11 @@ class MyKeyboardView @JvmOverloads constructor(
             clipboardManagerTopBar.background = ColorDrawable(mKeyboardBackgroundColor)
             clipboardManagerHolder.background = ColorDrawable(mBackgroundColor)
 
-            clipboardManagerClose.applyColorFilter(mTextColor)
-            clipboardManagerManage.applyColorFilter(mTextColor)
+            clipboardManagerClose.setTextColor(Color.WHITE)
+            clipboardManagerManage.applyColorFilter(Color.WHITE)
+            clipboardManagerClearAll.applyColorFilter(Color.parseColor("#00BCD4"))
 
-            clipboardManagerLabel.setTextColor(mTextColor)
+            clipboardManagerLabel.setTextColor(Color.WHITE)
             clipboardContentPlaceholder1.setTextColor(mTextColor)
             clipboardContentPlaceholder2.setTextColor(mTextColor)
         }
@@ -1606,19 +1760,43 @@ class MyKeyboardView @JvmOverloads constructor(
         invalidateKey(mCurrentKey)
     }
 
-    fun closeClipboardManager() {
+    fun closeAllPanels() {
         keyboardViewBinding?.apply {
             clipboardManagerHolder.beGone()
+            emojiPaletteHolder.beGone()
+            toolsMenuHolder.beGone()
+            textEditorHolder.beGone()
             suggestionsHolder.showAllInlineContentViews()
         }
     }
 
-    private fun openClipboardManager() {
+    fun closeClipboardManager() {
+        closeAllPanels()
+    }
+
+    fun openClipboardManager() {
+        closeAllPanels()
         keyboardViewBinding?.apply {
             clipboardManagerHolder.beVisible()
             suggestionsHolder.hideAllInlineContentViews()
         }
         setupStoredClips()
+    }
+
+    fun openToolsMenu() {
+        closeAllPanels()
+        keyboardViewBinding?.apply {
+            toolsMenuHolder.beVisible()
+            suggestionsHolder.hideAllInlineContentViews()
+        }
+    }
+
+    fun openTextEditor() {
+        closeAllPanels()
+        keyboardViewBinding?.apply {
+            textEditorHolder.beVisible()
+            suggestionsHolder.hideAllInlineContentViews()
+        }
     }
 
     private fun onSpaceBarLongPressed(): Boolean {
@@ -1652,25 +1830,26 @@ class MyKeyboardView @JvmOverloads constructor(
             val clips = ArrayList<ListItem>()
             val clipboardContent = context.getCurrentClip()
 
-            val pinnedClips = context.clipsDB.getClips()
-            val isCurrentClipPinnedToo = pinnedClips.any {
-                clipboardContent?.isNotEmpty() == true && it.value.trim() == clipboardContent
+            val pinnedClips = context.clipsDB.getPinnedClips()
+            val recentClips = context.clipsDB.getRecentClips()
+
+            if (pinnedClips.isNotEmpty()) {
+                val section = ClipsSectionLabel(context.getString(R.string.pinned_clips), false)
+                clips.add(section)
+                clips.addAll(pinnedClips)
             }
 
-            if (!isCurrentClipPinnedToo && clipboardContent?.isNotEmpty() == true) {
+            if (recentClips.isNotEmpty()) {
+                val section = ClipsSectionLabel(context.getString(R.string.recent_clips), false)
+                clips.add(section)
+                clips.addAll(recentClips)
+            } else if (clipboardContent?.isNotEmpty() == true && pinnedClips.none { it.value.trim() == clipboardContent.trim() }) {
                 val section = ClipsSectionLabel(context.getString(R.string.clipboard_current), true)
                 clips.add(section)
-
-                val clip = Clip(-1, clipboardContent)
+                val clip = Clip(-1, clipboardContent, false)
                 clips.add(clip)
             }
 
-            if (!isCurrentClipPinnedToo && clipboardContent?.isNotEmpty() == true) {
-                val section = ClipsSectionLabel(context.getString(R.string.clipboard_pinned), false)
-                clips.add(section)
-            }
-
-            clips.addAll(pinnedClips)
             Handler(Looper.getMainLooper()).post {
                 setupClipsAdapter(clips)
             }
@@ -1695,8 +1874,9 @@ class MyKeyboardView @JvmOverloads constructor(
             items = clips,
             refreshClipsListener = refreshClipsListener
         ) { clip ->
-            mOnKeyboardActionListener!!.onText(clip.value)
+            mOnKeyboardActionListener?.onText(clip.value)
             vibrateIfNeeded()
+            closeAllPanels()
         }
 
         keyboardViewBinding?.clipsList?.adapter = adapter
@@ -1751,17 +1931,14 @@ class MyKeyboardView @JvmOverloads constructor(
     }
 
     fun openEmojiPalette() {
+        closeAllPanels()
         keyboardViewBinding!!.emojiPaletteHolder.beVisible()
         keyboardViewBinding!!.suggestionsHolder.beGone()
         setupEmojis()
     }
 
     private fun closeEmojiPalette() {
-        keyboardViewBinding?.apply {
-            emojiPaletteHolder.beGone()
-            emojisList.scrollToPosition(0)
-            suggestionsHolder.beVisible()
-        }
+        closeAllPanels()
     }
 
     private fun setupEmojis() {

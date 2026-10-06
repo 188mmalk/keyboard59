@@ -33,6 +33,28 @@ interface OnKeyboardActionListener {
      */
     fun moveCursorRight()
 
+    fun moveCursorUp()
+
+    fun moveCursorDown()
+
+    fun selectAll()
+
+    fun copyText()
+
+    fun cutText()
+
+    fun pasteText()
+
+    fun moveToStart()
+
+    fun moveToEnd()
+
+    fun deleteChar()
+
+    fun insertSpace()
+
+    fun toggleSelectMode(): Boolean
+
     /**
      * Sends a sequence of characters to the listener.
      * @param text the string to be displayed.

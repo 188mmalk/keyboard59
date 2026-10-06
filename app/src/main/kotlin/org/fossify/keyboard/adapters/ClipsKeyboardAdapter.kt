@@ -14,6 +14,7 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.keyboard.R
 import org.fossify.keyboard.databinding.ItemClipOnKeyboardBinding
 import org.fossify.keyboard.databinding.ItemSectionLabelBinding
+import org.fossify.keyboard.extensions.clipsDB
 import org.fossify.keyboard.extensions.config
 import org.fossify.keyboard.extensions.getCurrentClip
 import org.fossify.keyboard.extensions.getStrokeColor
@@ -65,15 +66,53 @@ class ClipsKeyboardAdapter(
 
     private fun setupClip(view: View, clip: Clip) {
         ItemClipOnKeyboardBinding.bind(view).apply {
-            val rippleBg = clipHolder.background as RippleDrawable
-            val layerDrawable = rippleBg.findDrawableByLayerId(R.id.clipboard_background_holder) as LayerDrawable
-            layerDrawable.findDrawableByLayerId(R.id.clipboard_background_stroke).applyColorFilter(context.getStrokeColor())
-            layerDrawable.findDrawableByLayerId(R.id.clipboard_background_shape).applyColorFilter(backgroundColor)
-
             clipValue.apply {
                 text = clip.value
                 removeUnderlines()
-                setTextColor(textColor)
+            }
+
+            clipPinBtn.apply {
+                if (clip.isPinned) {
+                    setImageResource(R.drawable.ic_pin_cyan)
+                    contentDescription = context.getString(R.string.unpin_text)
+                } else {
+                    setImageResource(R.drawable.ic_pin_outline_gray)
+                    contentDescription = context.getString(R.string.pin_text)
+                }
+
+                setOnClickListener {
+                    ensureBackgroundThread {
+                        val newPinned = !clip.isPinned
+                        if (clip.id != null && clip.id != -1L) {
+                            context.clipsDB.updatePinned(clip.id!!, newPinned)
+                        } else {
+                            val newClip = Clip(null, clip.value, newPinned)
+                            ClipsHelper(context).insertClip(newClip)
+                        }
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            context.toast(if (newPinned) R.string.text_pinned else R.string.text_unpinned)
+                            refreshClipsListener.refreshClips()
+                        }
+                    }
+                }
+            }
+
+            clipDeleteBtn.apply {
+                setOnClickListener {
+                    if (clip.isPinned) {
+                        // CRITICAL: Pinned clips MUST NOT be deleted unless unpinned!
+                        context.toast(R.string.cannot_delete_pinned)
+                        return@setOnClickListener
+                    }
+                    ensureBackgroundThread {
+                        if (clip.id != null && clip.id != -1L) {
+                            context.clipsDB.delete(clip.id!!)
+                        }
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            refreshClipsListener.refreshClips()
+                        }
+                    }
+                }
             }
         }
     }

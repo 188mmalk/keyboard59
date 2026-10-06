@@ -456,12 +456,85 @@ class SimpleKeyboardIME : InputMethodService(), OnKeyboardActionListener, Shared
         }
     }
 
+    private var isSelectMode = false
+
+    override fun toggleSelectMode(): Boolean {
+        isSelectMode = !isSelectMode
+        return isSelectMode
+    }
+
     override fun moveCursorLeft() {
-        moveCursor(false)
+        if (isSelectMode) {
+            val ic = currentInputConnection
+            val extracted = ic?.getExtractedText(ExtractedTextRequest(), 0)
+            if (extracted != null) {
+                val selStart = extracted.selectionStart
+                val selEnd = extracted.selectionEnd
+                val newStart = (selStart - 1).coerceAtLeast(0)
+                ic.setSelection(newStart, selEnd)
+                return
+            }
+        }
+        sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_LEFT)
     }
 
     override fun moveCursorRight() {
-        moveCursor(true)
+        if (isSelectMode) {
+            val ic = currentInputConnection
+            val extracted = ic?.getExtractedText(ExtractedTextRequest(), 0)
+            if (extracted != null) {
+                val len = extracted.text?.length ?: 0
+                val selStart = extracted.selectionStart
+                val selEnd = extracted.selectionEnd
+                val newEnd = (selEnd + 1).coerceAtMost(len)
+                ic.setSelection(selStart, newEnd)
+                return
+            }
+        }
+        sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_RIGHT)
+    }
+
+    override fun moveCursorUp() {
+        sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_UP)
+    }
+
+    override fun moveCursorDown() {
+        sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_DOWN)
+    }
+
+    override fun selectAll() {
+        currentInputConnection?.performContextMenuAction(android.R.id.selectAll)
+    }
+
+    override fun copyText() {
+        currentInputConnection?.performContextMenuAction(android.R.id.copy)
+    }
+
+    override fun cutText() {
+        currentInputConnection?.performContextMenuAction(android.R.id.cut)
+    }
+
+    override fun pasteText() {
+        currentInputConnection?.performContextMenuAction(android.R.id.paste)
+    }
+
+    override fun moveToStart() {
+        currentInputConnection?.setSelection(0, 0)
+    }
+
+    override fun moveToEnd() {
+        val ic = currentInputConnection
+        val extracted = ic?.getExtractedText(ExtractedTextRequest(), 0)
+        val len = extracted?.text?.length ?: 0
+        ic?.setSelection(len, len)
+    }
+
+    override fun deleteChar() {
+        sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
+    }
+
+    override fun insertSpace() {
+        currentInputConnection?.commitText(" ", 1)
     }
 
     override fun onText(text: String) {

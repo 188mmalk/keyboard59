@@ -55,4 +55,27 @@
     <string name="keycode_enter">Enter</string>
     <string name="activities">أنشطة</string>
     <string name="objects">أشياء</string>
+    <!-- الأدوات ومحرر النصوص والحافظة -->
+    <string name="tools">الأدوات</string>
+    <string name="text_editing">تحرير النص</string>
+    <string name="cannot_delete_pinned">لا يمكن مسح النصوص المثبتة إلا بعد إلغاء التثبيت</string>
+    <string name="pinned_clips">النصوص المثبتة</string>
+    <string name="recent_clips">النصوص الأخيرة</string>
+    <string name="select_all">تحديد الكل</string>
+    <string name="select_text">تحديد</string>
+    <string name="copy">نسخ</string>
+    <string name="cut">قص</string>
+    <string name="paste">لصق</string>
+    <string name="start_of_line">البداية</string>
+    <string name="end_of_line">النهاية</string>
+    <string name="tool_resize">تغيير الحجم</string>
+    <string name="tool_theme">المظهر</string>
+    <string name="tool_translate">ترجمة</string>
+    <string name="tool_floating">عائم</string>
+    <string name="tool_edit">تحرير النص</string>
+    <string name="tool_stickers">ملصقات</string>
+    <string name="tool_gifs">صور GIF</string>
+    <string name="tool_languages">اللغات</string>
+    <string name="unpin_text">إلغاء التثبيت</string>
+    <string name="text_unpinned">تم إلغاء تثبيت النص</string>
 </resources>
